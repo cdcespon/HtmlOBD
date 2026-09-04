@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>ApexOBD - Suite de Validación del Juez Decisor</title>
+  <style>
+    body {
+      background-color: #0b0f19;
+      color: #e2e8f0;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      padding: 2rem;
+      margin: 0;
+    }
+    h1 {
+      color: #38bdf8;
+      font-size: 1.6rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      border-bottom: 1px solid #1e293b;
+      padding-bottom: 0.8rem;
+    }
+    .badge {
+      background: #0284c7;
+      color: #fff;
+      font-size: 0.75rem;
+      padding: 0.2rem 0.6rem;
+      border-radius: 9999px;
+      font-weight: bold;
+    }
+    .summary {
+      display: flex;
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .summary-card {
+      background: #1e293b;
+      border-radius: 8px;
+      padding: 1rem 1.5rem;
+      flex: 1;
+      border: 1px solid #334155;
+    }
+    .summary-card .number {
+      font-size: 2rem;
+      font-weight: bold;
+    }
+    .passed .number { color: #10b981; }
+    .failed .number { color: #ef4444; }
+    .total .number { color: #38bdf8; }
+    .test-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .test-item {
+      padding: 0.75rem 1rem;
+      background: #131d2e;
+      border-radius: 6px;
+      border-left: 4px solid #64748b;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: monospace;
+      font-size: 0.9rem;
+    }
+    .test-item.pass {
+      border-left-color: #10b981;
+    }
+    .test-item.fail {
+      border-left-color: #ef4444;
+      background: #251217;
+    }
+    .status-tag {
+      font-weight: bold;
+      font-size: 0.8rem;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+    }
+    .status-tag.pass { background: #064e3b; color: #34d399; }
+    .status-tag.fail { background: #7f1d1d; color: #f87171; }
+    .error-detail {
+      font-size: 0.8rem;
+      color: #fca5a5;
+      margin-top: 0.3rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>
+    <span>⚖️ ApexOBD - Juez Decisor</span>
+    <span class="badge">Suite de Conformidad Agéntica</span>
+  </h1>
+
+  <div class="summary">
+    <div class="summary-card total">
+      <div>Total Pruebas</div>
+      <div class="number" id="total-count">0</div>
+    </div>
+    <div class="summary-card passed">
+      <div>Exitosas (Pass)</div>
+      <div class="number" id="passed-count">0</div>
+    </div>
+    <div class="summary-card failed">
+      <div>Fallidas (Fail)</div>
+      <div class="number" id="failed-count">0</div>
+    </div>
+  </div>
+
+  <div class="test-list" id="test-list"></div>
+
+  <script type="module">
+    import { EventBus } from '../js/core/event_bus.js';
+    import { StateStore } from '../js/core/state_store.js';
+    import { OBD_PIDS, DTC_DATABASE, AT_COMMANDS } from '../js/core/obd_constants.js';
+    import { SimulatorTransport } from '../js/hal/simulator_transport.js';
+    import { ProtocolEngine } from '../js/core/protocol_engine.js';
+
+    const results = [];
+
+    async function test(name, fn) {
+      try {
+        await fn();
+        results.push({ name, pass: true });
+      } catch (err) {
+        results.push({ name, pass: false, error: err.message });
+      }
+    }
+
+    function assert(condition, message) {
+      if (!condition) throw new Error(message || 'Assertion failed');
+    }
+
+    async function runSuite() {
+      // 1. Pruebas de EventBus
+      await test('EventBus: Suscripción y emisión de eventos', () => {
+        const bus = new EventBus();
+        let received = null;
+        bus.on('telemetry:update', (data) => { received = data; });
+        bus.emit('telemetry:update', { key: 'rpm', value: 3000 });
+        assert(received !== null && received.key === 'rpm' && received.value === 3000, 'El payload no coincide');
+      });
+
+      await test('EventBus: Método once y desuscripción', () => {
+        const bus = new EventBus();
+        let count = 0;
+        bus.once('test:event', () => { count++; });
+        bus.emit('test:event', 1);
+        bus.emit('test:event', 2);
+        assert(count === 1, 'once debió ejecutarse exactamente 1 vez');
+      });
+
+      // 2. Pruebas de StateStore
+      await test('StateStore: Reactividad y actualización inmutable', () => {
+        const store = new StateStore();
+        let observedRpm = 0;
+        store.subscribe((state) => {
+          observedRpm = state.telemetry.rpm;
+        });
+        store.updateTelemetry({ rpm: 4500, speed: 120 });
+        assert(observedRpm === 4500, 'El suscriptor no fue notificado con 4500 RPM');
+        assert(store.getState().telemetry.speed === 120, 'La velocidad debe ser 120');
+      });
+
+      await test('StateStore: Reset de métricas', () => {
+        const store = new StateStore();
+        store.updateTelemetry({ rpm: 5000, speed: 140 });
+        store.reset();
+        assert(store.getState().telemetry.rpm === 0, 'RPM no se restableció a 0');
+        assert(store.getState().telemetry.speed === 0, 'Velocidad no se restableció a 0');
+      });
+
+      // 3. Fórmulas de Decodificación OBD2 (SAE J1979)
+      await test('PID Decoders: Cálculo de RPM ((A*256)+B)/4', () => {
+        // Bytes para 2000 RPM -> (2000 * 4) = 8000 -> Hex 0x1F40 -> A = 0x1F (31), B = 0x40 (64)
+        const bytes = [0x1F, 0x40];
+        const rpm = OBD_PIDS.ENGINE_RPM.decode(bytes);
+        assert(rpm === 2000, `Esperado 2000 RPM, obtenido: ${rpm}`);
+      });
+
+      await test('PID Decoders: Cálculo de Velocidad (A km/h)', () => {
+        const bytes = [0x50]; // 80 decimal
+        const speed = OBD_PIDS.VEHICLE_SPEED.decode(bytes);
+        assert(speed === 80, `Esperado 80 km/h, obtenido: ${speed}`);
+      });
+
+      await test('PID Decoders: Temperatura de Refrigerante (A - 40)', () => {
+        // 90°C -> A = 90 + 40 = 130 (0x82)
+        const bytes = [130];
+        const temp = OBD_PIDS.COOLANT_TEMP.decode(bytes);
+        assert(temp === 90, `Esperado 90°C, obtenido: ${temp}`);
+      });
+
+      await test('PID Decoders: Posición de Acelerador ((A*100)/255)', () => {
+        const bytes = [128]; // ~50.19%
+        const throttle = OBD_PIDS.THROTTLE_POS.decode(bytes);
+        assert(Math.round(throttle) === 50, `Esperado ~50%, obtenido: ${throttle}`);
+      });
+
+      // 4. Catálogo y Decodificación de DTCs
+      await test('DTC Database: Cobertura de códigos críticos', () => {
+        assert(DTC_DATABASE['P0300'] !== undefined, 'Falta P0300 en base de datos');
+        assert(DTC_DATABASE['P0171'] !== undefined, 'Falta P0171 en base de datos');
+        assert(DTC_DATABASE['P0302'].severity === 'HIGH', 'P0302 debe ser severidad HIGH');
+      });
+
+      // 5. Integración con SimulatorTransport y ProtocolEngine
+      await test('HAL Simulator: Conexión y respuesta a comandos AT y PIDs', async () => {
+        const sim = new SimulatorTransport();
+        await sim.connect();
+        assert(sim.isConnected === true, 'El simulador debe estar conectado');
+
+        const engine = new ProtocolEngine(sim);
+        const atzResp = await engine.sendCommand(AT_COMMANDS.RESET);
+        assert(atzResp.includes('ELM327'), `Respuesta de ATZ inválida: ${atzResp}`);
+
+        const voltResp = await engine.sendCommand(AT_COMMANDS.READ_VOLTAGE);
+        assert(voltResp.includes('V'), `Respuesta de voltaje inválida: ${voltResp}`);
+
+        await sim.disconnect();
+        assert(sim.isConnected === false, 'El simulador no se desconectó');
+      });
+
+      await test('HAL Simulator & ProtocolEngine: Escaneo y borrado de DTCs', async () => {
+        const sim = new SimulatorTransport();
+        await sim.connect();
+        const engine = new ProtocolEngine(sim);
+
+        // Escaneo inicial de fallas inyectadas
+        const dtcs = await engine.scanDTCs();
+        assert(dtcs.length > 0, 'Debieron detectarse DTCs simulados');
+        assert(dtcs.some(d => d.code === 'P0302'), 'Debió detectarse P0302');
+
+        // Borrado de fallas
+        await engine.clearDTCs();
+        const emptyDtcs = await engine.scanDTCs();
+        assert(emptyDtcs.length === 0, 'La lista de DTCs debió quedar vacía tras Servicio 04');
+
+        await sim.disconnect();
+      });
+
+      renderResults();
+    }
+
+    function renderResults() {
+      const listEl = document.getElementById('test-list');
+      let passed = 0;
+      let failed = 0;
+
+      listEl.innerHTML = '';
+      results.forEach(r => {
+        if (r.pass) passed++; else failed++;
+        const item = document.createElement('div');
+        item.className = `test-item ${r.pass ? 'pass' : 'fail'}`;
+        item.innerHTML = `
+          <div>
+            <strong>${r.name}</strong>
+            ${r.error ? `<div class="error-detail">${r.error}</div>` : ''}
+          </div>
+          <span class="status-tag ${r.pass ? 'pass' : 'fail'}">${r.pass ? 'PASS' : 'FAIL'}</span>
+        `;
+        listEl.appendChild(item);
+      });
+
+      document.getElementById('total-count').textContent = results.length;
+      document.getElementById('passed-count').textContent = passed;
+      document.getElementById('failed-count').textContent = failed;
+    }
+
+    window.addEventListener('DOMContentLoaded', runSuite);
+  </script>
+</body>
+</html>

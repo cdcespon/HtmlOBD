@@ -1,0 +1,160 @@
+/**
+ * ApexOBD - Telemetry Styles (Inspiración BimmerLink)
+ * Cuadrícula modular responsiva de tarjetas OLED con sparklines en tiempo real.
+ */
+
+.telemetry-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  padding: 1rem 1.5rem;
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+
+.telemetry-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.2rem;
+  padding-bottom: 0.8rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.telemetry-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #f8fafc;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.telemetry-actions {
+  display: flex;
+  gap: 0.8rem;
+}
+
+.telemetry-btn {
+  background: rgba(30, 41, 59, 0.7);
+  border: 1px solid #334155;
+  color: #94a3b8;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.telemetry-btn:hover {
+  background: #334155;
+  color: #f8fafc;
+}
+
+/* Grid de Tarjetas */
+.telemetry-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.2rem;
+  width: 100%;
+}
+
+.sensor-card {
+  background: #0d131f;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 12px;
+  padding: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+}
+
+.sensor-card:hover {
+  border-color: rgba(56, 189, 248, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+/* Alertas por umbral */
+.sensor-card.warning {
+  border-color: rgba(245, 158, 11, 0.7);
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.2);
+}
+
+.sensor-card.critical {
+  border-color: rgba(239, 68, 68, 0.9);
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.35);
+  animation: card-alert-pulse 1s infinite alternate;
+}
+
+@keyframes card-alert-pulse {
+  from { border-color: rgba(239, 68, 68, 0.5); }
+  to { border-color: rgba(239, 68, 68, 1); }
+}
+
+.card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.sensor-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #64748b;
+  letter-spacing: 0.05em;
+}
+
+.sensor-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.2rem 0.5rem;
+  border-radius: 9999px;
+  background: rgba(100, 116, 139, 0.2);
+  color: #94a3b8;
+}
+
+.sensor-badge.warn { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+.sensor-badge.crit { background: rgba(239, 68, 68, 0.25); color: #f87171; }
+
+.card-main {
+  margin: 0.8rem 0;
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+}
+
+.sensor-value {
+  font-size: 2.2rem;
+  font-weight: 800;
+  font-family: monospace;
+  color: #f8fafc;
+  line-height: 1;
+}
+
+.sensor-unit {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #38bdf8;
+}
+
+.card-minmax {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.75rem;
+  color: #64748b;
+  font-family: monospace;
+  margin-bottom: 0.6rem;
+}
+
+.sparkline-canvas {
+  width: 100%;
+  height: 48px;
+  border-radius: 4px;
+}

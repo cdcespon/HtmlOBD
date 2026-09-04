@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ApexOBD - Sistema de Diagnóstico & Telemetría Automotriz</title>
+  
+  <!-- Estilos del Sistema -->
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/cockpit.css">
+  <link rel="stylesheet" href="css/telemetry.css">
+  <link rel="stylesheet" href="css/diagnostics.css">
+  <link rel="stylesheet" href="css/performance.css">
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Sidebar Izquierdo de Navegación -->
+    <aside class="sidebar">
+      <div>
+        <div class="brand-section">
+          <div class="brand-icon">⚡</div>
+          <div>
+            <div class="brand-title">ApexOBD</div>
+            <div class="brand-subtitle">Hyper Telemetry & Diag</div>
+          </div>
+        </div>
+
+        <nav class="nav-menu" id="main-nav">
+          <div class="nav-item active" data-view="cockpit" id="nav-cockpit">
+            <span class="nav-icon">🚀</span>
+            <span>Cockpit Deportivo</span>
+          </div>
+          <div class="nav-item" data-view="telemetry" id="nav-telemetry">
+            <span class="nav-icon">⚡</span>
+            <span>Telemetría en Vivo</span>
+          </div>
+          <div class="nav-item" data-view="diagnostics" id="nav-diagnostics">
+            <span class="nav-icon">🛡️</span>
+            <span>Diagnóstico & Salud</span>
+          </div>
+          <div class="nav-item" data-view="performance" id="nav-performance">
+            <span class="nav-icon">🏁</span>
+            <span>Performance Lab</span>
+          </div>
+          <div class="nav-item" data-view="arbiter" id="nav-arbiter">
+            <span class="nav-icon">⚖️</span>
+            <span>Juez Decisor (Tests)</span>
+          </div>
+        </nav>
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="theme-selector">
+          <span>Tema Visual:</span>
+          <div class="theme-btn-group">
+            <div class="theme-dot cyan" data-theme="default" title="Stealth Cyan"></div>
+            <div class="theme-dot red" data-theme="racing-red" title="Racing Red"></div>
+            <div class="theme-dot blue" data-theme="msport" title="M-Sport Blue"></div>
+          </div>
+        </div>
+        <div style="font-size:0.7rem; color:#475569; text-align:center;">
+          ApexOBD v1.0 • HTML+CSS+JS
+        </div>
+      </div>
+    </aside>
+
+    <!-- Contenido Principal -->
+    <main class="main-content">
+      <!-- Barra Superior de Estado y Conectividad -->
+      <header class="app-header">
+        <div class="header-status-group">
+          <div class="status-pill connected" id="status-badge">
+            <div class="status-dot"></div>
+            <span id="status-text">CONECTADO</span>
+          </div>
+
+          <div class="header-meta">
+            <div class="meta-item">
+              <span>VOLTAJE:</span>
+              <b id="header-voltage" style="color:#38bdf8;">13.8V</b>
+            </div>
+            <div class="meta-item">
+              <span>PROTOCOLO:</span>
+              <b id="header-protocol" style="color:#a855f7;">CAN 11/500</b>
+            </div>
+            <div class="meta-item">
+              <span>CHECK ENGINE:</span>
+              <b id="header-mil" style="color:#ef4444;">ON</b>
+            </div>
+          </div>
+        </div>
+
+        <div class="connection-controls">
+          <select class="transport-select" id="transport-select">
+            <option value="SIMULATOR">Simulador Vehicular</option>
+            <option value="SERIAL">Web Serial (USB / COM)</option>
+            <option value="BLE">Web Bluetooth (BLE)</option>
+          </select>
+          <button class="connect-btn" id="btn-toggle-connect">Desconectar</button>
+        </div>
+      </header>
+
+      <!-- Viewport de Pantallas Funcionales -->
+      <section class="viewport-area" id="viewport">
+        <!-- Renderizado dinámico de la vista activa -->
+      </section>
+    </main>
+  </div>
+
+  <!-- Script Principal de la Aplicación -->
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
