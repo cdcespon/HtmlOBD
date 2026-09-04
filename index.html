@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ApexOBD - Sistema de Diagnóstico & Telemetría Automotriz</title>
+  <title>HtmlOBD - Sistema de Diagnóstico & Telemetría Automotriz</title>
   
   <!-- Estilos del Sistema -->
   <link rel="stylesheet" href="css/main.css">
@@ -14,36 +14,80 @@
 </head>
 <body>
   <div class="app-layout">
-    <!-- Sidebar Izquierdo de Navegación -->
+    <!-- Sidebar Izquierdo de Navegación Sobrio -->
     <aside class="sidebar">
       <div>
         <div class="brand-section">
-          <div class="brand-icon">⚡</div>
+          <div class="brand-icon">
+            <!-- Icono sobrio SVG de tacómetro/motor -->
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+              <circle cx="12" cy="12" r="4"/>
+            </svg>
+          </div>
           <div>
-            <div class="brand-title">ApexOBD</div>
-            <div class="brand-subtitle">Hyper Telemetry & Diag</div>
+            <div class="brand-title">HtmlOBD</div>
+            <div class="brand-subtitle">Automotive Interface</div>
           </div>
         </div>
 
         <nav class="nav-menu" id="main-nav">
           <div class="nav-item active" data-view="cockpit" id="nav-cockpit">
-            <span class="nav-icon">🚀</span>
+            <span class="nav-icon">
+              <!-- Tacómetro -->
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="m16 12-4-4v8"/>
+                <path d="M7 12h1M12 7v1M17 12h1"/>
+              </svg>
+            </span>
             <span>Cockpit Deportivo</span>
           </div>
+
           <div class="nav-item" data-view="telemetry" id="nav-telemetry">
-            <span class="nav-icon">⚡</span>
+            <span class="nav-icon">
+              <!-- Telemetría / Grid -->
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect width="7" height="7" x="3" y="3" rx="1"/>
+                <rect width="7" height="7" x="14" y="3" rx="1"/>
+                <rect width="7" height="7" x="14" y="14" rx="1"/>
+                <rect width="7" height="7" x="3" y="14" rx="1"/>
+              </svg>
+            </span>
             <span>Telemetría en Vivo</span>
           </div>
+
           <div class="nav-item" data-view="diagnostics" id="nav-diagnostics">
-            <span class="nav-icon">🛡️</span>
+            <span class="nav-icon">
+              <!-- Diagnóstico / Escáner -->
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                <path d="m9 12 2 2 4-4"/>
+              </svg>
+            </span>
             <span>Diagnóstico & Salud</span>
           </div>
+
           <div class="nav-item" data-view="performance" id="nav-performance">
-            <span class="nav-icon">🏁</span>
+            <span class="nav-icon">
+              <!-- Cronómetro / Rendimiento -->
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="14" r="8"/>
+                <path d="M12 2v4M10 2h4M12 14l3-3"/>
+              </svg>
+            </span>
             <span>Performance Lab</span>
           </div>
+
           <div class="nav-item" data-view="arbiter" id="nav-arbiter">
-            <span class="nav-icon">⚖️</span>
+            <span class="nav-icon">
+              <!-- Juez Decisor / Check -->
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/>
+                <path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/>
+                <path d="M7 21h10M12 3v18M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/>
+              </svg>
+            </span>
             <span>Juez Decisor (Tests)</span>
           </div>
         </nav>
@@ -51,7 +95,7 @@
 
       <div class="sidebar-footer">
         <div class="theme-selector">
-          <span>Tema Visual:</span>
+          <span>Paleta:</span>
           <div class="theme-btn-group">
             <div class="theme-dot cyan" data-theme="default" title="Stealth Cyan"></div>
             <div class="theme-dot red" data-theme="racing-red" title="Racing Red"></div>
@@ -59,7 +103,7 @@
           </div>
         </div>
         <div style="font-size:0.7rem; color:#475569; text-align:center;">
-          ApexOBD v1.0 • HTML+CSS+JS
+          HtmlOBD v1.0 • Client Architecture
         </div>
       </div>
     </aside>
@@ -74,6 +118,18 @@
             <span id="status-text">CONECTADO</span>
           </div>
 
+          <!-- Selector de Vehículo de Argentina -->
+          <button class="vehicle-select-btn" id="btn-vehicle-modal" title="Configurar modelo de vehículo o detectar por VIN">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.5 2.8C2.1 10.9 2 11.2 2 11.6V16c0 .6.4 1 1 1h2"/>
+              <circle cx="7" cy="17" r="2"/>
+              <path d="M9 17h6"/>
+              <circle cx="17" cy="17" r="2"/>
+            </svg>
+            <span id="active-vehicle-name">Toyota Hilux 2.8 D-4D</span>
+            <span class="badge-subtle" id="active-vehicle-origin">Zárate, Arg</span>
+          </button>
+
           <div class="header-meta">
             <div class="meta-item">
               <span>VOLTAJE:</span>
@@ -84,7 +140,7 @@
               <b id="header-protocol" style="color:#a855f7;">CAN 11/500</b>
             </div>
             <div class="meta-item">
-              <span>CHECK ENGINE:</span>
+              <span>MIL:</span>
               <b id="header-mil" style="color:#ef4444;">ON</b>
             </div>
           </div>
@@ -105,6 +161,58 @@
         <!-- Renderizado dinámico de la vista activa -->
       </section>
     </main>
+  </div>
+
+  <!-- Modal de Selección de Vehículo y Detección VIN -->
+  <div class="modal-backdrop" id="vehicle-modal" style="display:none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div style="display:flex; align-items:center; gap:0.6rem;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2">
+            <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.5 2.8C2.1 10.9 2 11.2 2 11.6V16c0 .6.4 1 1 1h2"/>
+            <circle cx="7" cy="17" r="2"/>
+            <path d="M9 17h6"/>
+            <circle cx="17" cy="17" r="2"/>
+          </svg>
+          <h3 style="margin:0; font-size:1.1rem; color:#f8fafc;">Perfil del Vehículo & Calibración</h3>
+        </div>
+        <button class="modal-close-btn" id="btn-close-modal">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Sección de Detección Automática por VIN -->
+        <div class="vin-detector-section">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.6rem;">
+            <div>
+              <div style="font-size:0.85rem; font-weight:700; color:#f8fafc;">Detección Automática por VIN (Servicio 09)</div>
+              <div style="font-size:0.75rem; color:#64748b;">Lee el número de chasis directamente de la ECU para determinar origen y motor.</div>
+            </div>
+            <button class="diag-btn primary" id="btn-detect-vin" style="padding:0.4rem 0.8rem; font-size:0.8rem;">
+              Leer VIN (0902)
+            </button>
+          </div>
+          <div class="vin-readout-box" id="vin-readout">VIN: No detectado aún</div>
+        </div>
+
+        <!-- Selector de Modelos de Argentina -->
+        <div style="margin-top:1.2rem;">
+          <label style="font-size:0.85rem; font-weight:700; color:#cbd5e1; display:block; margin-bottom:0.5rem;">
+            Modelos de Producción & Más Vendidos de Argentina:
+          </label>
+          <select class="vehicle-dropdown" id="vehicle-select-preset"></select>
+        </div>
+
+        <!-- Ficha Técnica del Vehículo Seleccionado -->
+        <div class="vehicle-specs-grid" id="vehicle-specs-container">
+          <!-- Renderizado dinámico de especificaciones -->
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="diag-btn secondary" id="btn-cancel-modal">Cerrar</button>
+        <button class="diag-btn primary" id="btn-apply-vehicle">Aplicar Calibración al Tablero</button>
+      </div>
+    </div>
   </div>
 
   <!-- Script Principal de la Aplicación -->

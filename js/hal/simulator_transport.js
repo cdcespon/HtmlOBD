@@ -89,7 +89,7 @@ export class SimulatorTransport extends IOBDTransport {
 
     // Comandos AT de ELM327
     if (cmd === 'ATZ') {
-      response = 'ELM327 v1.5 ApexOBD Simulator\r\n>';
+      response = 'ELM327 v1.5 HtmlOBD Simulator\r\n>';
     } else if (cmd.startsWith('ATE') || cmd.startsWith('ATL') || cmd.startsWith('ATH') || cmd.startsWith('ATS')) {
       response = 'OK\r\n>';
     } else if (cmd === 'ATSP0') {
@@ -113,10 +113,9 @@ export class SimulatorTransport extends IOBDTransport {
       this.clearDTCs();
       response = '44\r\n>'; // 44 es el echo positivo de servicio 04
     }
-    // Servicio 09: VIN del vehículo
+    // Servicio 09: VIN del vehículo (8AJBA3CD8P0000001 - Toyota Hilux Argentina Zárate 2023)
     else if (cmd === '0902') {
-      // Retorna VIN simulado: 1HGCR2F83HA000001
-      response = '49 02 01 31 48 47 \r\n49 02 02 43 52 32 46 38 \r\n49 02 03 33 48 41 30 30 \r\n49 02 04 30 30 30 30 31\r\n>';
+      response = '49 02 01 38 41 4A 42 \r\n49 02 02 41 33 43 44 \r\n49 02 03 38 50 30 30 \r\n49 02 04 30 30 30 30 31\r\n>';
     } else {
       response = 'NO DATA\r\n>';
     }

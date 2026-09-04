@@ -1,11 +1,12 @@
 /**
- * ApexOBD - ProtocolEngine
+ * HtmlOBD - ProtocolEngine
  * Motor de protocolo ELM327 y SAE J1979.
  * Orquesta la cola de comandos, parsing de respuestas hex, polling de PIDs y control de DTCs.
  */
 import { AT_COMMANDS, OBD_PIDS, DTC_DATABASE } from './obd_constants.js';
 import { eventBus } from './event_bus.js';
 import { stateStore } from './state_store.js';
+import { decodeVin } from './vehicle_catalog.js';
 
 export class ProtocolEngine {
   constructor(transport) {
@@ -289,6 +290,56 @@ export class ProtocolEngine {
       });
       eventBus.emit('diagnostics:clear_success', { timestamp: Date.now() });
       return true;
+    } finally {
+      if (wasPolling) {
+        this.startPolling();
+      }
+    }
+  }
+
+  /**
+   * Consulta y decodifica el número VIN del vehículo (Servicio 09 PID 02)
+   */
+  async readVin() {
+    const wasPolling = this.isPolling;
+    this.stopPolling();
+
+    try {
+      const raw = await this.sendCommand('0902', 3000);
+      const clean = raw.replace(/>/g, '').trim();
+      const lines = clean.split(/[\r\n]+/);
+      let hexChars = [];
+
+      for (const line of lines) {
+        const parts = line.trim().split(/\s+/);
+        // Formato típico '49 02 01 XX XX XX XX'
+        if (parts[0] === '49' && parts[1] === '02') {
+          // Extrae los bytes de datos después del índice de trama (parts[2])
+          const dataBytes = parts.slice(3);
+          hexChars.push(...dataBytes);
+        }
+      }
+
+      // Convierte los bytes hex a caracteres ASCII
+      let vinStr = '';
+      for (const h of hexChars) {
+        const charCode = parseInt(h, 16);
+        if (!isNaN(charCode) && charCode >= 32 && charCode <= 126) {
+          vinStr += String.fromCharCode(charCode);
+        }
+      }
+
+      // Si no se obtuvo con formato multiframe estándar, buscar secuencias de 17 caracteres
+      if (vinStr.length < 17) {
+        const matches = raw.match(/[A-HJ-NPR-Z0-9]{17}/i);
+        if (matches) vinStr = matches[0].toUpperCase();
+      }
+
+      const decoded = decodeVin(vinStr);
+      if (decoded && decoded.valid && decoded.matchedProfile) {
+        stateStore.updateVehicleProfile(decoded.matchedProfile);
+      }
+      return decoded;
     } finally {
       if (wasPolling) {
         this.startPolling();

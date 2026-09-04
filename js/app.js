@@ -1,10 +1,11 @@
 /**
- * ApexOBD - Application Bootstrap & Orchestrator
+ * HtmlOBD - Application Bootstrap & Orchestrator
  * Integra los módulos agénticos, administra la capa de transporte y la navegación SPA.
  */
 import { eventBus } from './core/event_bus.js';
 import { stateStore } from './core/state_store.js';
 import { ProtocolEngine } from './core/protocol_engine.js';
+import { ARGENTINA_VEHICLES, decodeVin } from './core/vehicle_catalog.js';
 import { SimulatorTransport } from './hal/simulator_transport.js';
 import { SerialTransport } from './hal/serial_transport.js';
 import { BLETransport } from './hal/ble_transport.js';
@@ -14,7 +15,7 @@ import { TelemetryView } from './modules/telemetry_view.js';
 import { DiagnosticsView } from './modules/diagnostics_view.js';
 import { PerformanceView } from './modules/performance_view.js';
 
-class ApexOBDApp {
+class HtmlOBDApp {
   constructor() {
     this.viewport = document.getElementById('viewport');
     this.currentViewInstance = null;
@@ -33,6 +34,7 @@ class ApexOBDApp {
     this._bindNavigation();
     this._bindThemeSelector();
     this._bindHeaderEvents();
+    this._initVehicleModal();
     this._listenStore();
 
     // Inicia con la vista Cockpit y auto-conecta el simulador
@@ -49,6 +51,19 @@ class ApexOBDApp {
     this.transportSelect = document.getElementById('transport-select');
     this.btnToggleConnect = document.getElementById('btn-toggle-connect');
     this.navItems = document.querySelectorAll('.nav-item');
+
+    // Referencias de selector de vehículo
+    this.btnVehicleModal = document.getElementById('btn-vehicle-modal');
+    this.activeVehicleName = document.getElementById('active-vehicle-name');
+    this.activeVehicleOrigin = document.getElementById('active-vehicle-origin');
+    this.vehicleModal = document.getElementById('vehicle-modal');
+    this.btnCloseModal = document.getElementById('btn-close-modal');
+    this.btnCancelModal = document.getElementById('btn-cancel-modal');
+    this.btnDetectVin = document.getElementById('btn-detect-vin');
+    this.btnApplyVehicle = document.getElementById('btn-apply-vehicle');
+    this.vinReadout = document.getElementById('vin-readout');
+    this.vehicleDropdown = document.getElementById('vehicle-select-preset');
+    this.vehicleSpecsContainer = document.getElementById('vehicle-specs-container');
   }
 
   _bindNavigation() {
@@ -129,6 +144,98 @@ class ApexOBDApp {
     }
   }
 
+  _initVehicleModal() {
+    // Rellenar selector de vehículos de Argentina
+    this.vehicleDropdown.innerHTML = ARGENTINA_VEHICLES.map(v => `
+      <option value="${v.id}">${v.brand} ${v.model} (${v.year}) - ${v.engine}</option>
+    `).join('');
+
+    const renderSpecs = (vehicle) => {
+      this.vehicleSpecsContainer.innerHTML = `
+        <div class="spec-item">
+          <div class="spec-label">Motorización</div>
+          <div class="spec-val">${vehicle.engine}</div>
+        </div>
+        <div class="spec-item">
+          <div class="spec-label">Potencia / Torque</div>
+          <div class="spec-val">${vehicle.powerHp} CV / ${vehicle.torqueNm} Nm</div>
+        </div>
+        <div class="spec-item">
+          <div class="spec-label">Peso en Vacío</div>
+          <div class="spec-val">${vehicle.weightKg} kg</div>
+        </div>
+        <div class="spec-item">
+          <div class="spec-label">Zona Roja (Corte)</div>
+          <div class="spec-val" style="color:#ef4444;">${vehicle.redlineRpm} RPM</div>
+        </div>
+        <div class="spec-item">
+          <div class="spec-label">Prefijo Chasis (WMI)</div>
+          <div class="spec-val" style="color:#38bdf8;">${vehicle.vinPrefix} (Argentina)</div>
+        </div>
+        <div class="spec-item">
+          <div class="spec-label">Tipo Combustible</div>
+          <div class="spec-val">${vehicle.fuelType}</div>
+        </div>
+        <div class="spec-item" style="grid-column: span 2;">
+          <div class="spec-label">Origen & Planta</div>
+          <div class="spec-val" style="font-size:0.85rem; color:#94a3b8;">${vehicle.description}</div>
+        </div>
+      `;
+    };
+
+    // Renderiza el primer vehículo inicialmente
+    renderSpecs(ARGENTINA_VEHICLES[0]);
+
+    this.vehicleDropdown.addEventListener('change', () => {
+      const selected = ARGENTINA_VEHICLES.find(v => v.id === this.vehicleDropdown.value);
+      if (selected) renderSpecs(selected);
+    });
+
+    this.btnVehicleModal.addEventListener('click', () => {
+      this.vehicleModal.style.display = 'flex';
+    });
+
+    const closeModal = () => {
+      this.vehicleModal.style.display = 'none';
+    };
+    this.btnCloseModal.addEventListener('click', closeModal);
+    this.btnCancelModal.addEventListener('click', closeModal);
+
+    this.btnApplyVehicle.addEventListener('click', () => {
+      const selected = ARGENTINA_VEHICLES.find(v => v.id === this.vehicleDropdown.value);
+      if (selected) {
+        stateStore.updateVehicleProfile(selected);
+        closeModal();
+      }
+    });
+
+    // Detección por VIN (Servicio 09)
+    this.btnDetectVin.addEventListener('click', async () => {
+      this.btnDetectVin.textContent = 'Leyendo VIN...';
+      this.vinReadout.textContent = 'Consultando Servicio 09 PID 02 a la ECU...';
+      try {
+        const decoded = await this.engine.readVin();
+        if (decoded && decoded.valid) {
+          this.vinReadout.innerHTML = `
+            <strong>VIN: ${decoded.vin}</strong><br>
+            <span>Fabricante: ${decoded.brand} (${decoded.country} - Planta: ${decoded.assemblyPlant})</span><br>
+            <span>Año Modelo: ${decoded.modelYear} | Serie: ${decoded.serialNumber}</span>
+          `;
+          if (decoded.matchedProfile) {
+            this.vehicleDropdown.value = decoded.matchedProfile.id;
+            renderSpecs(decoded.matchedProfile);
+          }
+        } else {
+          this.vinReadout.textContent = `Error o formato no reconocido: ${decoded?.error || 'Sin respuesta'}`;
+        }
+      } catch (err) {
+        this.vinReadout.textContent = `Fallo de comunicación OBD2: ${err.message}`;
+      } finally {
+        this.btnDetectVin.textContent = 'Leer VIN (0902)';
+      }
+    });
+  }
+
   _listenStore() {
     stateStore.subscribe((state) => {
       // Estado de conexión
@@ -137,6 +244,13 @@ class ApexOBDApp {
       this.statusText.textContent = conn.status;
       this.btnToggleConnect.textContent = conn.status === 'CONNECTED' ? 'Desconectar' : 'Conectar';
       
+      // Vehículo Activo en Header
+      const veh = state.vehicleProfile;
+      if (veh) {
+        this.activeVehicleName.textContent = `${veh.brand} ${veh.model}`;
+        this.activeVehicleOrigin.textContent = veh.fuelType.toUpperCase();
+      }
+
       // Voltaje y protocolo
       this.headerVoltage.textContent = `${conn.voltage.toFixed(1)}V`;
       this.headerProtocol.textContent = conn.protocol.split(' ')[0] || 'CAN';
@@ -226,5 +340,5 @@ class ApexOBDApp {
 
 // Inicialización de la aplicación al cargar el DOM
 window.addEventListener('DOMContentLoaded', () => {
-  window.app = new ApexOBDApp();
+  window.app = new HtmlOBDApp();
 });

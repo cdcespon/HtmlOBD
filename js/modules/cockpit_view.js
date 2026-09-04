@@ -151,9 +151,19 @@ export class CockpitView {
   }
 
   _updateShiftLights() {
+    const state = stateStore.getState();
+    const vehicle = state.vehicleProfile || {};
+    const redline = vehicle.redlineRpm || 6500;
     const rpm = this.animatedRpm;
-    // Umbrales: 5000, 5600, 6200, 6700, 7100
-    const thresholds = [4800, 5400, 6000, 6500, 7000];
+    
+    // Umbrales proporcionales a la zona roja del motor
+    const thresholds = [
+      redline * 0.72,
+      redline * 0.80,
+      redline * 0.88,
+      redline * 0.94,
+      redline * 0.98
+    ];
     this.leds.forEach((led, i) => {
       if (rpm >= thresholds[i]) {
         led.classList.add('active');
@@ -167,6 +177,12 @@ export class CockpitView {
     const ctx = this.tachCtx;
     const w = 600, h = 600, cx = 300, cy = 300, r = 240;
     ctx.clearRect(0, 0, w, h);
+
+    const state = stateStore.getState();
+    const vehicle = state.vehicleProfile || {};
+    const maxVal = vehicle.maxGaugeRpm || 8000;
+    const redlineRpm = vehicle.redlineRpm || 6500;
+    const maxNumber = Math.round(maxVal / 1000);
 
     // Fondo del reloj con gradiente radial de profundidad
     const bgGrad = ctx.createRadialGradient(cx, cy, 50, cx, cy, r);
@@ -188,12 +204,11 @@ export class CockpitView {
     const endAngle = Math.PI * 2.25;
     const totalAngle = endAngle - startAngle;
 
-    // Escala y marcas
-    const maxVal = 8000;
-    for (let i = 0; i <= 8; i++) {
+    // Escala y marcas dinámicas
+    for (let i = 0; i <= maxNumber; i++) {
       const val = i * 1000;
       const angle = startAngle + (val / maxVal) * totalAngle;
-      const isRedline = i >= 6.5;
+      const isRedline = val >= redlineRpm;
 
       const innerR = (i % 1 === 0) ? r - 35 : r - 25;
       const outerR = r - 12;
@@ -205,7 +220,7 @@ export class CockpitView {
       ctx.strokeStyle = isRedline ? '#ef4444' : '#64748b';
       ctx.stroke();
 
-      // Números principales (0..8)
+      // Números principales (0..6 o 0..8)
       const numR = r - 60;
       const nx = cx + Math.cos(angle) * numR;
       const ny = cy + Math.sin(angle) * numR;
@@ -216,8 +231,8 @@ export class CockpitView {
       ctx.fillText(i.toString(), nx, ny);
     }
 
-    // Arco de zona roja (6.5k a 8k)
-    const redlineStart = startAngle + (6500 / maxVal) * totalAngle;
+    // Arco dinámico de zona roja
+    const redlineStart = startAngle + (redlineRpm / maxVal) * totalAngle;
     ctx.beginPath();
     ctx.arc(cx, cy, r - 16, redlineStart, endAngle);
     ctx.lineWidth = 8;

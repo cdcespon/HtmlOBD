@@ -1,9 +1,10 @@
 /**
- * ApexOBD - StateStore
+ * HtmlOBD - StateStore
  * Almacén reactivo de estado centralizado.
- * Cumple con el Contrato Agéntico de ApexOBD.
+ * Cumple con el Contrato Agéntico de HtmlOBD.
  */
 import { eventBus } from './event_bus.js';
+import { ARGENTINA_VEHICLES } from './vehicle_catalog.js';
 
 export class StateStore {
   constructor() {
@@ -16,6 +17,7 @@ export class StateStore {
         fps: 60,
         deviceInfo: 'Desconectado'
       },
+      vehicleProfile: ARGENTINA_VEHICLES[0], // Por defecto: Toyota Hilux 2.8 D-4D (Líder Argentina)
       telemetry: {
         rpm: 0,
         speed: 0,
@@ -104,6 +106,15 @@ export class StateStore {
    */
   updatePerformance(partial) {
     this.state.performance = { ...this.state.performance, ...partial };
+    this._notify();
+  }
+
+  /**
+   * Actualiza el perfil del vehículo activo
+   */
+  updateVehicleProfile(profile) {
+    this.state.vehicleProfile = { ...profile };
+    eventBus.emit('vehicle:change', this.state.vehicleProfile);
     this._notify();
   }
 

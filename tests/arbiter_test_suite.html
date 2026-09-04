@@ -87,7 +87,7 @@
 </head>
 <body>
   <h1>
-    <span>⚖️ ApexOBD - Juez Decisor</span>
+    <span>⚖️ HtmlOBD - Juez Decisor</span>
     <span class="badge">Suite de Conformidad Agéntica</span>
   </h1>
 
@@ -114,6 +114,7 @@
     import { OBD_PIDS, DTC_DATABASE, AT_COMMANDS } from '../js/core/obd_constants.js';
     import { SimulatorTransport } from '../js/hal/simulator_transport.js';
     import { ProtocolEngine } from '../js/core/protocol_engine.js';
+    import { decodeVin } from '../js/core/vehicle_catalog.js';
 
     const results = [];
 
@@ -234,6 +235,36 @@
         await engine.clearDTCs();
         const emptyDtcs = await engine.scanDTCs();
         assert(emptyDtcs.length === 0, 'La lista de DTCs debió quedar vacía tras Servicio 04');
+
+        await sim.disconnect();
+      });
+
+      // 6. Decodificación de VIN y Modelos de Argentina
+      await test('VIN Decoder: Identificación de origen Argentina (Zárate) y modelo Toyota Hilux', () => {
+        const res = decodeVin('8AJBA3CD8P0000001');
+        assert(res.valid === true, 'El VIN debió ser válido');
+        assert(res.country === 'Argentina', 'El país debe ser Argentina');
+        assert(res.brand === 'Toyota', 'La marca debe ser Toyota');
+        assert(res.matchedProfile !== null, 'Debió emparejar con un perfil');
+        assert(res.matchedProfile.id === 'toyota_hilux_28', 'El perfil debe ser Hilux 2.8');
+      });
+
+      await test('VIN Decoder: Identificación de Fiat Cronos (Córdoba)', () => {
+        const res = decodeVin('8AP123456P0000002');
+        assert(res.valid === true, 'El VIN debió ser válido');
+        assert(res.country === 'Argentina', 'El país debe ser Argentina');
+        assert(res.brand.includes('Fiat'), 'La marca debe ser Fiat');
+        assert(res.matchedProfile.id === 'fiat_cronos_13', 'El perfil debe ser Cronos 1.3');
+      });
+
+      await test('HAL Simulator & ProtocolEngine: Lectura directa de VIN por Servicio 09', async () => {
+        const sim = new SimulatorTransport();
+        await sim.connect();
+        const engine = new ProtocolEngine(sim);
+
+        const decoded = await engine.readVin();
+        assert(decoded !== null && decoded.valid === true, 'El VIN leído por OBD2 debe ser válido');
+        assert(decoded.wmi === '8AJ', 'El WMI simulado debe ser 8AJ (Toyota Zárate)');
 
         await sim.disconnect();
       });
