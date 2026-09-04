@@ -194,12 +194,27 @@
           <div class="vin-readout-box" id="vin-readout">VIN: No detectado aún</div>
         </div>
 
-        <!-- Selector de Modelos de Argentina -->
-        <div style="margin-top:1.2rem;">
-          <label style="font-size:0.85rem; font-weight:700; color:#cbd5e1; display:block; margin-bottom:0.5rem;">
-            Modelos de Producción & Más Vendidos de Argentina:
-          </label>
-          <select class="vehicle-dropdown" id="vehicle-select-preset"></select>
+        <!-- Selector de Marca y Modelo de Argentina en Cascada -->
+        <div style="margin-top:1.2rem; display:flex; flex-direction:column; gap:0.8rem;">
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:0.8rem;">
+            <div>
+              <label style="font-size:0.8rem; font-weight:700; color:#cbd5e1; display:block; margin-bottom:0.4rem;">
+                1. Seleccionar Marca:
+              </label>
+              <select class="vehicle-dropdown" id="vehicle-brand-select"></select>
+            </div>
+            <div>
+              <label style="font-size:0.8rem; font-weight:700; color:#cbd5e1; display:block; margin-bottom:0.4rem;">
+                2. Seleccionar Modelo / Motor:
+              </label>
+              <select class="vehicle-dropdown" id="vehicle-model-select"></select>
+            </div>
+          </div>
+
+          <!-- Buscador directo opcional -->
+          <div>
+            <input type="text" class="terminal-input" id="vehicle-search-input" placeholder="O busca directamente por modelo (ej: Amarok, Hilux, Cronos, 208, Focus, V6)..." style="width:100%; box-sizing:border-box;">
+          </div>
         </div>
 
         <!-- Ficha Técnica del Vehículo Seleccionado -->

@@ -5,7 +5,7 @@
 import { eventBus } from './core/event_bus.js';
 import { stateStore } from './core/state_store.js';
 import { ProtocolEngine } from './core/protocol_engine.js';
-import { ARGENTINA_VEHICLES, decodeVin } from './core/vehicle_catalog.js';
+import { ARGENTINA_BRANDS, ARGENTINA_VEHICLES, decodeVin } from './core/vehicle_catalog.js';
 import { SimulatorTransport } from './hal/simulator_transport.js';
 import { SerialTransport } from './hal/serial_transport.js';
 import { BLETransport } from './hal/ble_transport.js';
@@ -62,7 +62,9 @@ class HtmlOBDApp {
     this.btnDetectVin = document.getElementById('btn-detect-vin');
     this.btnApplyVehicle = document.getElementById('btn-apply-vehicle');
     this.vinReadout = document.getElementById('vin-readout');
-    this.vehicleDropdown = document.getElementById('vehicle-select-preset');
+    this.brandDropdown = document.getElementById('vehicle-brand-select');
+    this.modelDropdown = document.getElementById('vehicle-model-select');
+    this.vehicleSearchInput = document.getElementById('vehicle-search-input');
     this.vehicleSpecsContainer = document.getElementById('vehicle-specs-container');
   }
 
@@ -145,12 +147,13 @@ class HtmlOBDApp {
   }
 
   _initVehicleModal() {
-    // Rellenar selector de vehículos de Argentina
-    this.vehicleDropdown.innerHTML = ARGENTINA_VEHICLES.map(v => `
-      <option value="${v.id}">${v.brand} ${v.model} (${v.year}) - ${v.engine}</option>
+    // 1. Poblar el selector de marcas
+    this.brandDropdown.innerHTML = ARGENTINA_BRANDS.map(brand => `
+      <option value="${brand}">${brand}</option>
     `).join('');
 
     const renderSpecs = (vehicle) => {
+      if (!vehicle) return;
       this.vehicleSpecsContainer.innerHTML = `
         <div class="spec-item">
           <div class="spec-label">Motorización</div>
@@ -170,25 +173,66 @@ class HtmlOBDApp {
         </div>
         <div class="spec-item">
           <div class="spec-label">Prefijo Chasis (WMI)</div>
-          <div class="spec-val" style="color:#38bdf8;">${vehicle.vinPrefix} (Argentina)</div>
+          <div class="spec-val" style="color:#38bdf8;">${vehicle.vinPrefix}</div>
         </div>
         <div class="spec-item">
           <div class="spec-label">Tipo Combustible</div>
           <div class="spec-val">${vehicle.fuelType}</div>
         </div>
         <div class="spec-item" style="grid-column: span 2;">
-          <div class="spec-label">Origen & Planta</div>
+          <div class="spec-label">Origen, Planta & Notas</div>
           <div class="spec-val" style="font-size:0.85rem; color:#94a3b8;">${vehicle.description}</div>
         </div>
       `;
     };
 
-    // Renderiza el primer vehículo inicialmente
-    renderSpecs(ARGENTINA_VEHICLES[0]);
+    // Función para poblar modelos de la marca seleccionada
+    const populateModels = (selectedBrand, selectModelId = null) => {
+      const models = ARGENTINA_VEHICLES.filter(v => v.brand === selectedBrand);
+      this.modelDropdown.innerHTML = models.map(m => `
+        <option value="${m.id}">${m.model} (${m.year}) - ${m.powerHp} CV</option>
+      `).join('');
 
-    this.vehicleDropdown.addEventListener('change', () => {
-      const selected = ARGENTINA_VEHICLES.find(v => v.id === this.vehicleDropdown.value);
+      let targetModel = null;
+      if (selectModelId) {
+        this.modelDropdown.value = selectModelId;
+        targetModel = models.find(m => m.id === selectModelId);
+      } else {
+        targetModel = models[0];
+      }
+      renderSpecs(targetModel);
+    };
+
+    // Inicializa con Toyota y la primera opción (Hilux)
+    this.brandDropdown.value = 'Toyota';
+    populateModels('Toyota', 'toyota_hilux_28');
+
+    // Cambio de marca en el selector
+    this.brandDropdown.addEventListener('change', () => {
+      populateModels(this.brandDropdown.value);
+    });
+
+    // Cambio de modelo en el selector
+    this.modelDropdown.addEventListener('change', () => {
+      const selected = ARGENTINA_VEHICLES.find(v => v.id === this.modelDropdown.value);
       if (selected) renderSpecs(selected);
+    });
+
+    // Buscador predictivo en tiempo real
+    this.vehicleSearchInput.addEventListener('input', (e) => {
+      const query = e.target.value.trim().toLowerCase();
+      if (!query) return;
+
+      const matched = ARGENTINA_VEHICLES.find(v => 
+        v.model.toLowerCase().includes(query) ||
+        v.brand.toLowerCase().includes(query) ||
+        v.engine.toLowerCase().includes(query)
+      );
+
+      if (matched) {
+        this.brandDropdown.value = matched.brand;
+        populateModels(matched.brand, matched.id);
+      }
     });
 
     this.btnVehicleModal.addEventListener('click', () => {
@@ -202,7 +246,7 @@ class HtmlOBDApp {
     this.btnCancelModal.addEventListener('click', closeModal);
 
     this.btnApplyVehicle.addEventListener('click', () => {
-      const selected = ARGENTINA_VEHICLES.find(v => v.id === this.vehicleDropdown.value);
+      const selected = ARGENTINA_VEHICLES.find(v => v.id === this.modelDropdown.value);
       if (selected) {
         stateStore.updateVehicleProfile(selected);
         closeModal();
@@ -222,8 +266,8 @@ class HtmlOBDApp {
             <span>Año Modelo: ${decoded.modelYear} | Serie: ${decoded.serialNumber}</span>
           `;
           if (decoded.matchedProfile) {
-            this.vehicleDropdown.value = decoded.matchedProfile.id;
-            renderSpecs(decoded.matchedProfile);
+            this.brandDropdown.value = decoded.matchedProfile.brand;
+            populateModels(decoded.matchedProfile.brand, decoded.matchedProfile.id);
           }
         } else {
           this.vinReadout.textContent = `Error o formato no reconocido: ${decoded?.error || 'Sin respuesta'}`;
